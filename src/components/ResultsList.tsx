@@ -22,7 +22,7 @@ import {
   ChevronRight,
   Eye
 } from 'lucide-react'
-import { createApiClient } from '@/lib/api'
+import { taskApi } from '@/lib/api'
 import type { ExtractedData } from '@/types'
 
 interface ResultsListProps {
@@ -71,7 +71,7 @@ export default function ResultsList({
   })
   const [showFilters, setShowFilters] = useState(false)
 
-  const apiClient = createApiClient()
+  // 直接使用taskApi
 
   // Fetch results from API
   const fetchResults = async (page: number = 1) => {
@@ -79,21 +79,10 @@ export default function ResultsList({
     setError(null)
     
     try {
-      const response = await apiClient.get(`/tasks/results/${taskId}`, {
-        params: {
-          page,
-          limit: itemsPerPage,
-          format: 'json'
-        }
-      })
-      
-      if (response.success) {
-        setResultsData(response.data)
-        setFilteredResults(response.data.results || [])
-        setCurrentPage(response.data.currentPage || page)
-      } else {
-        setError(response.message || '获取结果失败')
-      }
+      const searchResult = await taskApi.getTaskResults(taskId)
+      setResultsData(searchResult)
+      setFilteredResults(searchResult.results || [])
+      setCurrentPage(page)
     } catch (err) {
       console.error('Error fetching results:', err)
       setError('网络错误，请检查连接')

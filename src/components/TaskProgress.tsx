@@ -19,7 +19,7 @@ import {
   Building2,
   MapPin
 } from 'lucide-react'
-import { createApiClient } from '@/lib/api'
+import { taskApi } from '@/lib/api'
 import type { TaskStatus } from '@/types'
 
 interface TaskProgressProps {
@@ -104,29 +104,24 @@ export default function TaskProgress({
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
-  const apiClient = createApiClient()
+  // 直接使用taskApi
 
   // Fetch task status
   const fetchTaskStatus = async () => {
     try {
-      const response = await apiClient.get(`/tasks/status/${taskId}`)
-      
-      if (response.success) {
-        setTaskData(response.data)
-        setError(null)
-        setLastUpdated(new Date())
+      const taskStatus = await taskApi.getTaskStatus(taskId)
+      setTaskData(taskStatus)
+      setError(null)
+      setLastUpdated(new Date())
 
-        // Call completion callback
-        if (response.data.status === 'completed' && onTaskComplete) {
-          onTaskComplete(taskId, response.data)
-        }
-        
-        // Call error callback
-        if (response.data.status === 'failed' && onTaskError) {
-          onTaskError(taskId, response.data.message)
-        }
-      } else {
-        setError(response.message || '获取任务状态失败')
+      // Call completion callback
+      if (taskStatus.status === 'completed' && onTaskComplete) {
+        onTaskComplete(taskId, taskStatus)
+      }
+      
+      // Call error callback
+      if (taskStatus.status === 'failed' && onTaskError) {
+        onTaskError(taskId, taskStatus.message || '任务执行失败')
       }
     } catch (err) {
       console.error('Error fetching task status:', err)
@@ -139,15 +134,8 @@ export default function TaskProgress({
   // Cancel task
   const handleCancelTask = async () => {
     try {
-      const response = await apiClient.post(`/tasks/cancel/${taskId}`, {
-        reason: '用户主动取消'
-      })
-      
-      if (response.success) {
-        await fetchTaskStatus() // Refresh status
-      } else {
-        setError(response.message || '取消任务失败')
-      }
+      await taskApi.cancelTask(taskId)
+      await fetchTaskStatus() // Refresh status
     } catch (err) {
       console.error('Error cancelling task:', err)
       setError('取消任务失败，请稍后重试')

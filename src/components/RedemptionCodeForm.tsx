@@ -17,7 +17,7 @@ import {
   Clock,
   Users
 } from 'lucide-react'
-import { createApiClient } from '@/lib/api'
+import { userApi } from '@/lib/api'
 
 interface RedemptionCodeFormProps {
   onValidationSuccess: (codeData: {
@@ -50,7 +50,7 @@ export default function RedemptionCodeForm({
   const [error, setError] = useState<string | null>(null)
   const [inputError, setInputError] = useState<string | null>(null)
 
-  const apiClient = createApiClient()
+  // 直接使用userApi
 
   const validateInput = (inputCode: string): boolean => {
     if (!inputCode.trim()) {
@@ -102,28 +102,16 @@ export default function RedemptionCodeForm({
     setValidationResult(null)
 
     try {
-      const response = await apiClient.post('/redemption-codes/validate', {
-        code: code.trim()
+      const result = await userApi.validateCode(code.trim())
+      setValidationResult(result)
+      
+      // Call success callback
+      onValidationSuccess({
+        codeId: result.codeId,
+        remainingUses: result.remainingUses,
+        dailyRemaining: result.dailyRemaining,
+        singleLimit: result.singleLimit
       })
-
-      if (response.success && response.data.isValid) {
-        const result = response.data as ValidationResult
-        setValidationResult(result)
-        
-        // Call success callback
-        onValidationSuccess({
-          codeId: result.codeId,
-          remainingUses: result.remainingUses,
-          dailyRemaining: result.dailyRemaining,
-          singleLimit: result.singleLimit
-        })
-      } else {
-        const errorMessage = response.data?.message || response.message || '兑换码验证失败'
-        setError(errorMessage)
-        if (onValidationError) {
-          onValidationError(errorMessage)
-        }
-      }
     } catch (err) {
       console.error('Error validating redemption code:', err)
       const errorMessage = '网络错误，请检查连接后重试'

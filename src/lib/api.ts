@@ -352,4 +352,14 @@ export function createPluginTaskListener(
   )
 }
 
+// 创建API客户端实例
+export const createApiClient = () => {
+  return {
+    userApi,
+    taskApi,
+    pluginApi,
+    adminApi
+  }
+}
+
 export default api

@@ -1,0 +1,50 @@
+ 📋 你现在只需要这几个手动步骤：
+
+  步骤1: Vercel部署 🚀
+
+  # 方法1: CLI部署（推荐）
+  npm install -g vercel
+  vercel login
+  vercel --prod
+
+  # 方法2: GitHub集成
+  # 在 https://vercel.com 连接你的GitHub仓库
+
+  步骤2: 在Vercel设置环境变量 🔧
+
+  复制 .env.production 文件中的所有变量到Vercel项目设置：
+  - NEXT_PUBLIC_SUPABASE_URL
+  - NEXT_PUBLIC_SUPABASE_ANON_KEY
+  - SUPABASE_SERVICE_ROLE_KEY
+  - JWT_SECRET
+  - NODE_ENV=production
+  - NEXT_PUBLIC_APP_URL（部署后更新为实际域名）
+
+  步骤3: 更新Chrome扩展配置 🔌
+
+  // extension-package/manifest.json
+  {
+    "host_permissions": [
+      "https://your-actual-vercel-domain.vercel.app/*"
+    ]
+  }
+
+  步骤4: 验证部署 ✅
+
+  部署完成后访问：
+  - 主页功能正常
+  - 兑换码验证工作
+  - 管理后台可登录（用户名: admin 或 manager）
+
+  ---
+  🎯 总结
+
+  好消息: 你跳过了最复杂的数据库设置步骤！你的Supabase已经完全配置好，包括：
+  - ✅ 所有核心表结构
+  - ✅ 管理员账户
+  - ✅ 兑换码系统
+  - ✅ 权限配置
+
+  现在只需要: 部署到Vercel + 配置环境变量 = 完成生产部署！
+
+  预计剩余时间：15-30分钟

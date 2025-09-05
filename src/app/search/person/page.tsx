@@ -63,7 +63,7 @@ export default function PersonSearchPage() {
       )
 
       if (result.success) {
-        setCurrentTask(result.taskId)
+        setCurrentTask(result.taskId || null)
       } else {
         setError(result.message || '任务创建失败')
       }
@@ -133,8 +133,6 @@ export default function PersonSearchPage() {
               </p>
               <SearchForm
                 onSubmit={handleSearchSubmit}
-                remainingUses={validationData.result.remainingUses}
-                singleLimit={validationData.result.singleLimit}
               />
             </div>
 

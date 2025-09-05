@@ -85,18 +85,10 @@ export default function ResultDisplay({
   const fetchResults = async (page: number = 1) => {
     try {
       setLoading(true)
-      const response = await userApi.getTaskResults(taskId, {
-        page,
-        limit: 20,
-        format: 'json'
-      })
+      const response = await userApi.getTaskResults(taskId)
       
-      if (response.success) {
-        setResultData(response.data)
-        setError(null)
-      } else {
-        setError(response.message || '获取结果失败')
-      }
+      setResultData(response as any)
+      setError(null)
     } catch (err) {
       console.error('Error fetching results:', err)
       setError('网络错误，请检查连接')

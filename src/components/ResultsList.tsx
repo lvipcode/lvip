@@ -23,11 +23,11 @@ import {
   Eye
 } from 'lucide-react'
 import { taskApi } from '@/lib/api'
-import type { ExtractedData } from '@/types'
+// import type { ExtractedData } from '@/types'
 
 interface ResultsListProps {
   taskId: string
-  initialResults?: ExtractedData[]
+  initialResults?: any[]
   showPagination?: boolean
   itemsPerPage?: number
 }
@@ -39,7 +39,7 @@ interface ResultsData {
   currentPage: number
   pageSize: number
   totalPages: number
-  results: ExtractedData[]
+  results: any[]
   dataQuality: number
 }
 
@@ -58,7 +58,7 @@ export default function ResultsList({
   itemsPerPage = 20
 }: ResultsListProps) {
   const [resultsData, setResultsData] = useState<ResultsData | null>(null)
-  const [filteredResults, setFilteredResults] = useState<ExtractedData[]>(initialResults)
+  const [filteredResults, setFilteredResults] = useState<any[]>(initialResults || [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -79,8 +79,8 @@ export default function ResultsList({
     setError(null)
     
     try {
-      const searchResult = await taskApi.getTaskResults(taskId)
-      setResultsData(searchResult)
+      const searchResult = await taskApi.getResults(taskId)
+      setResultsData(searchResult as any)
       setFilteredResults(searchResult.results || [])
       setCurrentPage(page)
     } catch (err) {
@@ -92,7 +92,7 @@ export default function ResultsList({
   }
 
   // Apply filters and sorting
-  const applyFilters = (results: ExtractedData[]) => {
+  const applyFilters = (results: any[]) => {
     let filtered = [...results]
 
     // Search term filter

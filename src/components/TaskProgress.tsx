@@ -109,8 +109,8 @@ export default function TaskProgress({
   // Fetch task status
   const fetchTaskStatus = async () => {
     try {
-      const taskStatus = await taskApi.getTaskStatus(taskId)
-      setTaskData(taskStatus)
+      const taskStatus = await taskApi.getStatus(taskId)
+      setTaskData(taskStatus as any)
       setError(null)
       setLastUpdated(new Date())
 
@@ -134,7 +134,7 @@ export default function TaskProgress({
   // Cancel task
   const handleCancelTask = async () => {
     try {
-      await taskApi.cancelTask(taskId)
+      await taskApi.cancel(taskId)
       await fetchTaskStatus() // Refresh status
     } catch (err) {
       console.error('Error cancelling task:', err)

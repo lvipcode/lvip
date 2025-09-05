@@ -8,11 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle, Search, Settings } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import type { SearchParams, TaskType } from '@/types'
+import type { SearchParams } from '@/types'
 
 interface SearchFormProps {
   onSubmit: (params: {
-    taskType: TaskType
+    taskType: string
     searchParams: SearchParams
     maxResults: number
   }) => void
@@ -35,7 +35,7 @@ const MAX_RESULTS_OPTIONS = [
 ]
 
 export default function SearchForm({ onSubmit, isLoading = false, disabled = false }: SearchFormProps) {
-  const [taskType, setTaskType] = useState<TaskType>('person-search')
+  const [taskType, setTaskType] = useState<string>('person-search')
   const [searchParams, setSearchParams] = useState<SearchParams>({
     keywords: '',
     location: '',
@@ -140,7 +140,7 @@ export default function SearchForm({ onSubmit, isLoading = false, disabled = fal
             </Label>
             <Select 
               value={taskType} 
-              onValueChange={(value) => setTaskType(value as TaskType)}
+              onValueChange={(value) => setTaskType(value)}
               disabled={isLoading || disabled}
             >
               <SelectTrigger>

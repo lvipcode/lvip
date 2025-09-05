@@ -352,6 +352,14 @@ export function createPluginTaskListener(
   )
 }
 
+// 任务相关API (从userApi中提取)
+export const taskApi = {
+  getStatus: userApi.getTaskStatus,
+  getResults: userApi.getTaskResults,
+  cancel: userApi.cancelTask,
+  export: userApi.exportResults
+}
+
 // 创建API客户端实例
 export const createApiClient = () => {
   return {

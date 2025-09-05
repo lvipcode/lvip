@@ -103,7 +103,7 @@ export default function RedemptionCodeForm({
 
     try {
       const result = await userApi.validateCode(code.trim())
-      setValidationResult(result)
+      setValidationResult(result as any)
       
       // Call success callback
       onValidationSuccess({

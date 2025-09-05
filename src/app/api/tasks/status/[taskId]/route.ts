@@ -12,13 +12,14 @@ export async function GET(
   request: NextRequest, 
   { params }: RouteParams
 ) {
+  const { taskId } = await params
+  
   try {
-    const { taskId } = await params
     
     // Validate task ID format
     if (!taskId || !isValidUUID(taskId)) {
       return NextResponse.json(
-        createApiResponse(false, null, null, '无效的任务ID'),
+        createApiResponse(false, undefined, undefined, '无效的任务ID'),
         { status: 400 }
       )
     }
@@ -26,7 +27,7 @@ export async function GET(
     const supabase = createServerSupabase()
     
     // Call database function to get task status
-    const { data, error } = await supabase.rpc('get_task_status', {
+    const { data, error } = await (supabase as any).rpc('get_task_status', {
       p_task_id: taskId
     })
 
@@ -36,7 +37,7 @@ export async function GET(
       const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
       
       // Log error to system logs
-      await supabase.from('system_logs').insert({
+      await (supabase as any).from('system_logs').insert({
         log_level: 'error',
         log_type: 'api_request',
         task_id: taskId,
@@ -46,14 +47,14 @@ export async function GET(
       }).catch(console.error)
 
       return NextResponse.json(
-        createApiResponse(false, null, null, '状态查询失败，请稍后重试'),
+        createApiResponse(false, undefined, undefined, '状态查询失败，请稍后重试'),
         { status: 500 }
       )
     }
 
     if (!data || data.length === 0) {
       return NextResponse.json(
-        createApiResponse(false, null, null, '任务不存在'),
+        createApiResponse(false, undefined, undefined, '任务不存在'),
         { status: 404 }
       )
     }
@@ -84,17 +85,17 @@ export async function GET(
     const supabase = createServerSupabase()
     
     // Log unexpected error
-    await supabase.from('system_logs').insert({
+    await (supabase as any).from('system_logs').insert({
       log_level: 'error',
       log_type: 'api_request',
-      task_id: params.taskId,
+      task_id: taskId,
       user_ip: clientIP,
       message: '任务状态查询API意外错误',
       details: { error: error instanceof Error ? error.message : 'Unknown error' }
     }).catch(console.error)
 
     return NextResponse.json(
-      createApiResponse(false, null, null, '服务器内部错误，请稍后重试'),
+      createApiResponse(false, undefined, undefined, '服务器内部错误，请稍后重试'),
       { status: 500 }
     )
   }

@@ -127,17 +127,22 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Log registration
-      await supabase
-        .from('system_logs')
-        .insert({
-          log_level: 'info',
-          log_type: 'plugin_event',
-          plugin_id: validation.sanitized?.pluginId,
-          user_ip: clientIP,
-          message: existing ? '插件重新注册' : '插件首次注册',
-          details: validation.sanitized
-        })
+      // Log registration (用类型断言绕过 Supabase 类型推断问题)
+      try {
+        await (supabase as any)
+          .from('system_logs')
+          .insert({
+            log_level: 'info',
+            log_type: 'plugin_event',
+            plugin_id: validation.sanitized?.pluginId || null,
+            user_ip: clientIP || null,
+            message: existing ? '插件重新注册' : '插件首次注册',
+            details: validation.sanitized || null
+          })
+      } catch (logError) {
+        // 日志记录失败不应影响插件注册流程
+        console.warn('系统日志记录失败:', logError)
+      }
 
       return createCorsResponse(
         createApiResponse(true, {

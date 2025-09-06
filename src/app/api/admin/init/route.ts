@@ -14,7 +14,7 @@ export async function POST() {
         message: '默认管理员账号已创建',
         credentials: {
           username: 'admin',
-          password: 'admin123'
+          password: '请查看服务器日志获取随机生成的密码'
         },
         note: '数据库表结构需要在Supabase控制台手动执行05-admin-system-tables.sql'
       }, '管理员初始化成功')

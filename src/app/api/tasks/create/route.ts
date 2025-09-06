@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       const codeInfo = validationResult[0]
 
       // Create task in database
-      const { data: task, error: taskError } = await supabase
+      const { data: task, error: taskError } = await (supabase as any)
         .from('task_queue')
         .insert({
           redemption_code_id: codeInfo.code_id,
@@ -100,17 +100,22 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Log task creation
-      await supabase
-        .from('system_logs')
-        .insert({
-          log_level: 'info',
-          log_type: 'task_event',
-          task_id: task.id,
-          user_ip: clientIP,
-          message: '任务创建成功',
-          details: validation.sanitized
-        })
+      // Log task creation (用类型断言绕过 Supabase 类型推断问题)
+      try {
+        await (supabase as any)
+          .from('system_logs')
+          .insert({
+            log_level: 'info',
+            log_type: 'task_event',
+            task_id: task.id,
+            user_ip: clientIP || null,
+            message: '任务创建成功',
+            details: validation.sanitized || null,
+            plugin_id: null
+          })
+      } catch (logError) {
+        console.warn('系统日志记录失败:', logError)
+      }
 
       return NextResponse.json(
         createApiResponse(true, {

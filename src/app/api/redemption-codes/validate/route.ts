@@ -65,16 +65,22 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Log successful validation
-      await supabase
-        .from('system_logs')
-        .insert({
-          log_level: 'info',
-          log_type: 'redemption_validation',
-          user_ip: clientIP,
-          message: '兑换码验证成功',
-          details: { code: sanitizedCode }
-        })
+      // Log successful validation (用类型断言绕过 Supabase 类型推断问题)
+      try {
+        await (supabase as any)
+          .from('system_logs')
+          .insert({
+            log_level: 'info',
+            log_type: 'redemption_validation',
+            user_ip: clientIP || null,
+            message: '兑换码验证成功',
+            details: { code: sanitizedCode },
+            plugin_id: null,
+            task_id: null
+          })
+      } catch (logError) {
+        console.warn('系统日志记录失败:', logError)
+      }
 
       return NextResponse.json(
         createApiResponse(true, {

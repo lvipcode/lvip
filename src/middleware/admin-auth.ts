@@ -33,6 +33,7 @@ export async function adminAuthMiddleware(request: NextRequest) {
   try {
     // 从 Cookie 中获取令牌
     const token = request.cookies.get('admin_token')?.value
+    console.log(`[中间件] 路径: ${pathname}, token存在: ${!!token}, token长度: ${token ? token.length : 0}`)
 
     if (!token) {
       // 如果是API请求，返回401
@@ -48,7 +49,9 @@ export async function adminAuthMiddleware(request: NextRequest) {
     }
 
     // 验证令牌
+    console.log(`[中间件] 开始验证token`)
     const verification = await verifySessionToken(token)
+    console.log(`[中间件] token验证结果: ${verification.valid}, 错误: ${verification.error}`)
     
     if (!verification.valid) {
       // 清除无效的令牌

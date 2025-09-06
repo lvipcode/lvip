@@ -72,14 +72,29 @@ CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires ON admin_sessions(expires_
 CREATE INDEX IF NOT EXISTS idx_redemption_code_usage_code_id ON redemption_code_usage(redemption_code_id);
 
 -- 创建约束
-ALTER TABLE orders ADD CONSTRAINT IF NOT EXISTS check_order_status 
-  CHECK (status IN ('pending', 'paid', 'delivered', 'cancelled'));
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'check_order_status') THEN
+    ALTER TABLE orders ADD CONSTRAINT check_order_status 
+      CHECK (status IN ('pending', 'paid', 'delivered', 'cancelled'));
+  END IF;
+END $$;
 
-ALTER TABLE orders ADD CONSTRAINT IF NOT EXISTS check_positive_quantity 
-  CHECK (quantity > 0);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'check_positive_quantity') THEN
+    ALTER TABLE orders ADD CONSTRAINT check_positive_quantity 
+      CHECK (quantity > 0);
+  END IF;
+END $$;
 
-ALTER TABLE orders ADD CONSTRAINT IF NOT EXISTS check_positive_usage_limit 
-  CHECK (usage_limit > 0);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'check_positive_usage_limit') THEN
+    ALTER TABLE orders ADD CONSTRAINT check_positive_usage_limit 
+      CHECK (usage_limit > 0);
+  END IF;
+END $$;
 
 -- 更新兑换码表约束以支持批次
 UPDATE redemption_codes SET batch_id = gen_random_uuid() WHERE batch_id IS NULL;

@@ -24,3 +24,6 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
+
+// 强制使用Node.js Runtime而不是Edge Runtime
+export const runtime = 'nodejs'

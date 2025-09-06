@@ -200,9 +200,16 @@ export async function createDefaultAdmin(): Promise<void> {
     const supabase = createServerSupabase()
     const passwordHash = await bcrypt.hash('admin123', 12)
     
+    // 先删除现有的admin用户（如果存在）
+    await (supabase as any)
+      .from('admin_users')
+      .delete()
+      .eq('username', 'admin')
+
+    // 创建新的admin用户
     const { error } = await (supabase as any)
       .from('admin_users')
-      .upsert({
+      .insert({
         username: 'admin',
         password_hash: passwordHash,
         role: 'admin'

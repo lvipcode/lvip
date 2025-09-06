@@ -52,12 +52,32 @@ export default function AdminLogin() {
       })
 
       if (result.success && result.data?.token) {
-        // 设置令牌到 cookie (生产环境用secure，开发环境不用)
-        const isSecure = window.location.protocol === 'https:'
-        const cookieString = `admin_token=${result.data.token}; path=/; max-age=${24 * 60 * 60}; samesite=strict${isSecure ? '; secure' : ''}`
+        // 设置令牌到 cookie - 简化版本，避免兼容性问题
+        const cookieString = `admin_token=${result.data.token}; path=/; max-age=${24 * 60 * 60}; samesite=lax`
         document.cookie = cookieString
         
         console.log('登录成功，设置cookie:', cookieString)
+        
+        // 验证cookie是否设置成功
+        setTimeout(() => {
+          const cookies = document.cookie.split(';')
+          const adminToken = cookies.find(c => c.trim().startsWith('admin_token='))
+          console.log('cookie设置验证:', adminToken ? 'SUCCESS' : 'FAILED')
+          console.log('所有cookies:', document.cookie)
+          
+          // 如果cookie设置失败，尝试更简单的方式
+          if (!adminToken) {
+            console.log('尝试备用cookie设置方式...')
+            document.cookie = `admin_token=${result.data.token}; path=/`
+            
+            // 再次验证
+            setTimeout(() => {
+              const cookiesAgain = document.cookie.split(';')
+              const adminTokenAgain = cookiesAgain.find(c => c.trim().startsWith('admin_token='))
+              console.log('备用方式验证:', adminTokenAgain ? 'SUCCESS' : 'FAILED')
+            }, 100)
+          }
+        }, 100)
         
         // 跳转到管理后台
         console.log('开始跳转到管理后台...')

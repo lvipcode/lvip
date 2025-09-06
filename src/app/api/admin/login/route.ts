@@ -20,7 +20,13 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
     // 验证登录
+    console.log('调用verifyAdminLogin')
     const result = await verifyAdminLogin(username, password, clientIP, userAgent)
+    console.log('verifyAdminLogin结果:', {
+      success: result.success,
+      hasToken: !!result.token,
+      error: result.error
+    })
 
     if (result.success) {
       return NextResponse.json(

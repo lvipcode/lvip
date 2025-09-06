@@ -45,6 +45,13 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
     }
 
     // 生成会话令牌
+    console.log('生成JWT令牌，用户信息:', {
+      id: (adminUser as any).id,
+      username: (adminUser as any).username,
+      role: (adminUser as any).role
+    })
+    console.log('JWT_SECRET存在:', !!JWT_SECRET)
+    
     const sessionToken = jwt.sign(
       { 
         adminId: (adminUser as any).id, 
@@ -54,6 +61,8 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
       JWT_SECRET,
       { expiresIn: '24h' }
     )
+    
+    console.log('生成的sessionToken:', sessionToken ? 'TOKEN_EXISTS' : 'TOKEN_IS_UNDEFINED')
 
     // 计算过期时间
     const expiresAt = new Date(Date.now() + SESSION_DURATION)
@@ -79,7 +88,7 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
       .update({ last_login: new Date().toISOString() })
       .eq('id', (adminUser as any).id)
 
-    return {
+    const result = {
       success: true,
       token: sessionToken,
       user: {
@@ -89,6 +98,14 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
         lastLogin: (adminUser as any).last_login
       }
     }
+    
+    console.log('verifyAdminLogin返回结果:', {
+      success: result.success,
+      hasToken: !!result.token,
+      tokenLength: result.token ? result.token.length : 0
+    })
+    
+    return result
 
   } catch (error) {
     console.error('登录验证失败:', error)

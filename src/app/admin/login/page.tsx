@@ -60,8 +60,15 @@ export default function AdminLogin() {
         console.log('登录成功，设置cookie:', cookieString)
         
         // 跳转到管理后台
-        router.push('/admin/dashboard')
-        router.refresh()
+        console.log('开始跳转到管理后台...')
+        try {
+          await router.push('/admin/dashboard')
+          console.log('router.push 调用成功')
+          router.refresh()
+          console.log('router.refresh 调用成功')
+        } catch (routerError) {
+          console.error('路由跳转失败:', routerError)
+        }
       } else {
         console.error('登录失败，原因:', result.error || '未知错误')
         setError(result.error || '登录失败')

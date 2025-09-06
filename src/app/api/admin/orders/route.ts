@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     const totalAmount = price * quantity
 
     // 创建订单记录
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await (supabase as any)
       .from('orders')
       .insert({
         order_number: orderNumber,

@@ -49,11 +49,11 @@ export async function GET(
 
     // 如果订单已关联批次，获取兑换码列表
     let codes = null
-    if (order.batch_id) {
+    if ((order as any).batch_id) {
       const { data: codesData } = await supabase
         .from('redemption_codes')
         .select('code, total_uses, used_count, status, created_at')
-        .eq('batch_id', order.batch_id)
+        .eq('batch_id', (order as any).batch_id)
         .order('created_at', { ascending: true })
       
       codes = codesData
@@ -134,24 +134,24 @@ export async function PUT(
     }
 
     // 如果状态改为已支付，记录支付时间
-    if (status === 'paid' && currentOrder.status !== 'paid') {
+    if (status === 'paid' && (currentOrder as any).status !== 'paid') {
       updateData.paid_at = new Date().toISOString()
     }
 
     // 如果状态改为已交付，需要生成兑换码
-    if (status === 'delivered' && currentOrder.status !== 'delivered') {
+    if (status === 'delivered' && (currentOrder as any).status !== 'delivered') {
       updateData.delivered_at = new Date().toISOString()
 
       // 如果还没有关联批次，创建兑换码
-      if (!currentOrder.batch_id) {
-        const batchName = `订单_${currentOrder.order_number}`
+      if (!(currentOrder as any).batch_id) {
+        const batchName = `订单_${(currentOrder as any).order_number}`
         
-        const { data: batchId, error: generateError } = await supabase
+        const { data: batchId, error: generateError } = await (supabase as any)
           .rpc('generate_redemption_codes', {
             p_batch_name: batchName,
-            p_quantity: currentOrder.quantity,
-            p_usage_limit: currentOrder.usage_limit,
-            p_notes: `订单 ${currentOrder.order_number} 的兑换码`,
+            p_quantity: (currentOrder as any).quantity,
+            p_usage_limit: (currentOrder as any).usage_limit,
+            p_notes: `订单 ${(currentOrder as any).order_number} 的兑换码`,
             p_created_by: adminUser?.username || 'admin'
           })
 
@@ -164,7 +164,7 @@ export async function PUT(
     }
 
     // 更新订单
-    const { data: updatedOrder, error: updateError } = await supabase
+    const { data: updatedOrder, error: updateError } = await (supabase as any)
       .from('orders')
       .update(updateData)
       .eq('id', orderId)

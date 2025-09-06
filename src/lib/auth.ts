@@ -39,7 +39,7 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
     }
 
     // 验证密码
-    const passwordMatch = await bcrypt.compare(password, adminUser.password_hash)
+    const passwordMatch = await bcrypt.compare(password, (adminUser as any).password_hash)
     if (!passwordMatch) {
       return { success: false, error: '用户名或密码错误' }
     }
@@ -47,9 +47,9 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
     // 生成会话令牌
     const sessionToken = jwt.sign(
       { 
-        adminId: adminUser.id, 
-        username: adminUser.username,
-        role: adminUser.role 
+        adminId: (adminUser as any).id, 
+        username: (adminUser as any).username,
+        role: (adminUser as any).role 
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -59,10 +59,10 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
     const expiresAt = new Date(Date.now() + SESSION_DURATION)
 
     // 保存会话到数据库
-    const { error: sessionError } = await supabase
+    const { error: sessionError } = await (supabase as any)
       .from('admin_sessions')
       .insert({
-        admin_user_id: adminUser.id,
+        admin_user_id: (adminUser as any).id,
         session_token: sessionToken,
         expires_at: expiresAt.toISOString(),
         ip_address: ipAddress,
@@ -74,19 +74,19 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
     }
 
     // 更新最后登录时间
-    await supabase
+    await (supabase as any)
       .from('admin_users')
       .update({ last_login: new Date().toISOString() })
-      .eq('id', adminUser.id)
+      .eq('id', (adminUser as any).id)
 
     return {
       success: true,
       token: sessionToken,
       user: {
-        id: adminUser.id,
-        username: adminUser.username,
-        role: adminUser.role,
-        lastLogin: adminUser.last_login
+        id: (adminUser as any).id,
+        username: (adminUser as any).username,
+        role: (adminUser as any).role,
+        lastLogin: (adminUser as any).last_login
       }
     }
 
@@ -127,10 +127,10 @@ export async function verifySessionToken(token: string): Promise<{ valid: boolea
     return {
       valid: true,
       user: {
-        id: session.admin_users.id,
-        username: session.admin_users.username,
-        role: session.admin_users.role,
-        lastLogin: session.admin_users.last_login
+        id: (session as any).admin_users.id,
+        username: (session as any).admin_users.username,
+        role: (session as any).admin_users.role,
+        lastLogin: (session as any).admin_users.last_login
       }
     }
 
@@ -203,7 +203,7 @@ export async function createDefaultAdmin(): Promise<void> {
     const supabase = createServerSupabase()
     const passwordHash = await bcrypt.hash('admin123', 12)
     
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('admin_users')
       .upsert({
         username: 'admin',

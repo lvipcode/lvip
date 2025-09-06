@@ -13,8 +13,17 @@ export async function GET(request: NextRequest) {
 
     // 构建查询 - 获取未使用的兑换码
     let query = supabase
-      .from('v_unused_redemption_codes')
-      .select('*')
+      .from('redemption_codes')
+      .select(`
+        id,
+        code,
+        total_uses,
+        used_count,
+        batch_name,
+        created_at,
+        status
+      `)
+      .eq('status', 'active')
       .order('created_at', { ascending: false })
 
     if (batchId) {
@@ -37,7 +46,7 @@ export async function GET(request: NextRequest) {
     if (format === 'csv') {
       // 生成CSV格式
       const csvHeader = 'Code,Usage_Limit,Used_Count,Batch_Name,Created_At\n'
-      const csvRows = codes.map(code => [
+      const csvRows = codes.map((code: any) => [
         code.code,
         code.total_uses,
         code.used_count,
@@ -60,7 +69,7 @@ export async function GET(request: NextRequest) {
       const jsonContent = JSON.stringify({
         export_time: new Date().toISOString(),
         total_codes: codes.length,
-        codes: codes.map(code => ({
+        codes: codes.map((code: any) => ({
           code: code.code,
           usage_limit: code.total_uses,
           used_count: code.used_count,
@@ -78,7 +87,7 @@ export async function GET(request: NextRequest) {
 
     } else if (format === 'txt') {
       // 生成纯文本格式（只包含兑换码）
-      const txtContent = codes.map(code => code.code).join('\n')
+      const txtContent = codes.map((code: any) => code.code).join('\n')
 
       return new NextResponse(txtContent, {
         headers: {

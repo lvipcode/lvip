@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     const supabase = createServerSupabase()
 
     // 调用数据库函数生成兑换码
-    const { data: batchId, error } = await supabase
+    const { data: batchId, error } = await (supabase as any)
       .rpc('generate_redemption_codes', {
         p_batch_name: batchName,
         p_quantity: quantity,

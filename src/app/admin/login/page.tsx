@@ -17,6 +17,8 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [initLoading, setInitLoading] = useState(false)
+  const [initMessage, setInitMessage] = useState('')
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +65,36 @@ export default function AdminLogin() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (error) setError('') // 清除错误信息
+  }
+
+  const handleInitAdmin = async () => {
+    setInitLoading(true)
+    setInitMessage('')
+    
+    try {
+      const response = await fetch('/api/admin/init', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setInitMessage('默认管理员已创建！用户名: admin, 密码: admin123')
+        // 自动填充表单
+        setFormData({ username: 'admin', password: 'admin123' })
+      } else {
+        setInitMessage(result.error || '初始化失败')
+      }
+
+    } catch (error) {
+      console.error('初始化请求失败:', error)
+      setInitMessage('网络错误，请稍后重试')
+    } finally {
+      setInitLoading(false)
+    }
   }
 
   return (
@@ -154,9 +186,36 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
+            {initMessage && (
+              <Alert className={initMessage.includes('已创建') ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                <AlertDescription className={initMessage.includes('已创建') ? 'text-green-800' : 'text-red-800'}>
+                  {initMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleInitAdmin}
+                disabled={initLoading}
+                className="w-full text-sm"
+              >
+                {initLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                    初始化中...
+                  </div>
+                ) : (
+                  '创建默认管理员账号'
+                )}
+              </Button>
+            </div>
+            
             <div className="text-xs text-gray-500 text-center space-y-1">
-              <p>开发环境默认账号：</p>
+              <p>默认账号信息：</p>
               <p className="font-mono bg-gray-100 px-2 py-1 rounded">
                 用户名: admin / 密码: admin123
               </p>

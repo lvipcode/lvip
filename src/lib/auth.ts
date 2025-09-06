@@ -193,11 +193,8 @@ export async function cleanupExpiredSessions(): Promise<void> {
   }
 }
 
-// 创建默认管理员用户（仅在开发环境使用）
+// 创建默认管理员用户
 export async function createDefaultAdmin(): Promise<void> {
-  if (process.env.NODE_ENV !== 'development') {
-    return
-  }
 
   try {
     const supabase = createServerSupabase()

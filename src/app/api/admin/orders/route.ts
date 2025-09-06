@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 // 创建新订单
 export async function POST(request: NextRequest) {
   try {
-    const adminUser = getAdminUserFromHeaders(request)
+    // const adminUser = getAdminUserFromHeaders(request) // TODO: 实现权限检查
     const {
       customerName,
       customerEmail,

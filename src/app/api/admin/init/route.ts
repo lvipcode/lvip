@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createDefaultAdmin } from '@/lib/auth'
 import { createApiResponse } from '@/lib/utils'
-import { createServerSupabase } from '@/lib/supabase'
 
 // 初始化数据库表结构和默认管理员账号
 export async function POST() {

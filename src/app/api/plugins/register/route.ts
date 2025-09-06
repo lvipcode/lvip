@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
       if (existing) {
         // Update existing plugin
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from('plugin_registry')
           .update({
             version: validation.sanitized?.version,
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // Create new plugin registration
-        const { error: insertError } = await supabase
+        const { error: insertError } = await (supabase as any)
           .from('plugin_registry')
           .insert({
             plugin_id: validation.sanitized?.pluginId,

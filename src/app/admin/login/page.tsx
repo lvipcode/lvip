@@ -23,6 +23,7 @@ export default function AdminLogin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('表单提交开始')
     
     if (!formData.username || !formData.password) {
       setError('请填写用户名和密码')
@@ -33,6 +34,7 @@ export default function AdminLogin() {
     setError('')
 
     try {
+      console.log('发送登录请求', formData)
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
@@ -44,8 +46,12 @@ export default function AdminLogin() {
       const result = await response.json()
 
       if (result.success) {
-        // 设置令牌到 cookie
-        document.cookie = `admin_token=${result.token}; path=/; max-age=${24 * 60 * 60}; secure; samesite=strict`
+        // 设置令牌到 cookie (生产环境用secure，开发环境不用)
+        const isSecure = window.location.protocol === 'https:'
+        const cookieString = `admin_token=${result.token}; path=/; max-age=${24 * 60 * 60}; samesite=strict${isSecure ? '; secure' : ''}`
+        document.cookie = cookieString
+        
+        console.log('登录成功，设置cookie:', cookieString)
         
         // 跳转到管理后台
         router.push('/admin/dashboard')
@@ -68,6 +74,7 @@ export default function AdminLogin() {
   }
 
   const handleInitAdmin = async () => {
+    console.log('开始初始化管理员')
     setInitLoading(true)
     setInitMessage('')
     

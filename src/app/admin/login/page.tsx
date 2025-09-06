@@ -44,11 +44,17 @@ export default function AdminLogin() {
       })
 
       const result = await response.json()
+      console.log('登录API响应:', {
+        success: result.success,
+        hasToken: !!result.data?.token,
+        tokenLength: result.data?.token ? result.data.token.length : 0,
+        error: result.error
+      })
 
-      if (result.success) {
+      if (result.success && result.data?.token) {
         // 设置令牌到 cookie (生产环境用secure，开发环境不用)
         const isSecure = window.location.protocol === 'https:'
-        const cookieString = `admin_token=${result.token}; path=/; max-age=${24 * 60 * 60}; samesite=strict${isSecure ? '; secure' : ''}`
+        const cookieString = `admin_token=${result.data.token}; path=/; max-age=${24 * 60 * 60}; samesite=strict${isSecure ? '; secure' : ''}`
         document.cookie = cookieString
         
         console.log('登录成功，设置cookie:', cookieString)
@@ -57,6 +63,7 @@ export default function AdminLogin() {
         router.push('/admin/dashboard')
         router.refresh()
       } else {
+        console.error('登录失败，原因:', result.error || '未知错误')
         setError(result.error || '登录失败')
       }
 

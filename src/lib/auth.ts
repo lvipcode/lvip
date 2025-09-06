@@ -50,17 +50,23 @@ export async function verifyAdminLogin(username: string, password: string, ipAdd
       username: (adminUser as any).username,
       role: (adminUser as any).role
     })
-    console.log('JWT_SECRET存在:', !!JWT_SECRET)
+    console.log('JWT_SECRET存在:', !!JWT_SECRET, 'JWT_SECRET长度:', JWT_SECRET.length)
     
-    const sessionToken = jwt.sign(
-      { 
+    let sessionToken: string
+    try {
+      const payload = { 
         adminId: (adminUser as any).id, 
         username: (adminUser as any).username,
         role: (adminUser as any).role 
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    )
+      }
+      console.log('JWT payload:', payload)
+      
+      sessionToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' })
+      console.log('JWT生成成功，长度:', sessionToken ? sessionToken.length : 0)
+    } catch (jwtError) {
+      console.error('JWT生成失败:', jwtError)
+      throw new Error('JWT生成失败: ' + jwtError)
+    }
     
     console.log('生成的sessionToken:', sessionToken ? 'TOKEN_EXISTS' : 'TOKEN_IS_UNDEFINED')
 

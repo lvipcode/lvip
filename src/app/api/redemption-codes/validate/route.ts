@@ -29,24 +29,72 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Implement database validation after database setup
-    console.log('Code validation requested:', { code: sanitizedCode, clientIP })
+    // Database validation
+    const { createServerSupabase } = await import('@/lib/supabase')
+    const supabase = createServerSupabase()
 
-    // For build purposes, return a mock success response
-    // In production, this would validate against the database
-    return NextResponse.json(
-      createApiResponse(true, {
-        valid: true,
-        code: sanitizedCode,
-        message: '兑换码验证成功',
-        // Mock data for build
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        maxUses: 100,
-        currentUses: 0,
-        dailyLimit: 10,
-        singleLimit: 50
-      })
-    )
+    try {
+      // Call the database validation function
+      const { data: validationResult, error: validationError } = await (supabase as any)
+        .rpc('validate_redemption_code', { p_code: sanitizedCode })
+
+      if (validationError) {
+        console.error('Database validation error:', validationError)
+        return NextResponse.json(
+          createApiResponse(false, undefined, undefined, '数据库验证错误'),
+          { status: 500 }
+        )
+      }
+
+      const result = validationResult?.[0]
+      if (!result) {
+        return NextResponse.json(
+          createApiResponse(false, undefined, undefined, '兑换码验证失败'),
+          { status: 400 }
+        )
+      }
+
+      if (!result.is_valid) {
+        return NextResponse.json(
+          createApiResponse(false, {
+            valid: false,
+            code: sanitizedCode,
+            message: result.message
+          }, result.message),
+          { status: 400 }
+        )
+      }
+
+      // Log successful validation
+      await supabase
+        .from('system_logs')
+        .insert({
+          log_level: 'info',
+          log_type: 'redemption_validation',
+          user_ip: clientIP,
+          message: '兑换码验证成功',
+          details: { code: sanitizedCode }
+        })
+
+      return NextResponse.json(
+        createApiResponse(true, {
+          valid: true,
+          code: sanitizedCode,
+          codeId: result.code_id,
+          message: '兑换码验证成功',
+          remainingUses: result.remaining_uses,
+          dailyRemaining: result.daily_remaining,
+          singleLimit: result.single_limit
+        })
+      )
+
+    } catch (dbError) {
+      console.error('Database connection error:', dbError)
+      return NextResponse.json(
+        createApiResponse(false, undefined, undefined, '数据库连接失败'),
+        { status: 500 }
+      )
+    }
 
   } catch (error) {
     console.error('Unexpected error in code validation:', error)

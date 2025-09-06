@@ -50,20 +50,86 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Implement database task creation after database setup
-    const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    console.log('Task creation requested:', { taskId, ...validation.sanitized })
+    // Database task creation
+    const { createServerSupabase } = await import('@/lib/supabase')
+    const supabase = createServerSupabase()
 
-    return NextResponse.json(
-      createApiResponse(true, {
-        success: true,
-        message: '任务创建成功',
-        taskId,
-        taskType: validation.sanitized?.taskType,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      })
-    )
+    try {
+      const { code } = body
+
+      // First validate redemption code
+      if (!code) {
+        return NextResponse.json(
+          createApiResponse(false, undefined, undefined, '兑换码不能为空'),
+          { status: 400 }
+        )
+      }
+
+      // Validate redemption code
+      const { data: validationResult, error: validationError } = await (supabase as any)
+        .rpc('validate_redemption_code', { p_code: code.trim().toUpperCase() })
+
+      if (validationError || !validationResult?.[0]?.is_valid) {
+        return NextResponse.json(
+          createApiResponse(false, undefined, undefined, '兑换码无效或已过期'),
+          { status: 400 }
+        )
+      }
+
+      const codeInfo = validationResult[0]
+
+      // Create task in database
+      const { data: task, error: taskError } = await supabase
+        .from('task_queue')
+        .insert({
+          redemption_code_id: codeInfo.code_id,
+          task_type: validation.sanitized?.taskType,
+          search_params: validation.sanitized?.searchParams,
+          max_results: validation.sanitized?.maxResults,
+          status: 'pending',
+          timeout_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10分钟超时
+        })
+        .select()
+        .single()
+
+      if (taskError) {
+        console.error('Database task creation error:', taskError)
+        return NextResponse.json(
+          createApiResponse(false, undefined, undefined, '任务创建失败'),
+          { status: 500 }
+        )
+      }
+
+      // Log task creation
+      await supabase
+        .from('system_logs')
+        .insert({
+          log_level: 'info',
+          log_type: 'task_event',
+          task_id: task.id,
+          user_ip: clientIP,
+          message: '任务创建成功',
+          details: validation.sanitized
+        })
+
+      return NextResponse.json(
+        createApiResponse(true, {
+          success: true,
+          message: '任务创建成功',
+          taskId: task.id,
+          taskType: task.task_type,
+          status: task.status,
+          createdAt: task.created_at
+        })
+      )
+
+    } catch (dbError) {
+      console.error('Database connection error:', dbError)
+      return NextResponse.json(
+        createApiResponse(false, undefined, undefined, '数据库连接失败'),
+        { status: 500 }
+      )
+    }
 
   } catch (error) {
     console.error('Unexpected error in task creation:', error)

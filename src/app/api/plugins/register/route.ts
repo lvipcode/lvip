@@ -75,18 +75,87 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: Implement database registration after database setup
-    console.log('Plugin registration requested', validation.sanitized)
+    // Database plugin registration
+    const { createServerSupabase } = await import('@/lib/supabase')
+    const supabase = createServerSupabase()
 
-    // Return success response
-    return createCorsResponse(
-      createApiResponse(true, {
-        success: true,
-        message: '插件注册成功',
-        pluginId: validation.sanitized?.pluginId,
-        timestamp: new Date().toISOString()
-      })
-    )
+    try {
+      // Check if plugin already exists
+      const { data: existing } = await supabase
+        .from('plugin_registry')
+        .select('id, status')
+        .eq('plugin_id', validation.sanitized?.pluginId)
+        .single()
+
+      if (existing) {
+        // Update existing plugin
+        const { error: updateError } = await supabase
+          .from('plugin_registry')
+          .update({
+            version: validation.sanitized?.version,
+            capabilities: [validation.sanitized?.pluginType],
+            status: 'online',
+            last_heartbeat: new Date().toISOString()
+          })
+          .eq('plugin_id', validation.sanitized?.pluginId)
+
+        if (updateError) {
+          console.error('Plugin update error:', updateError)
+          return createCorsResponse(
+            createApiResponse(false, undefined, undefined, '插件更新失败'),
+            500
+          )
+        }
+      } else {
+        // Create new plugin registration
+        const { error: insertError } = await supabase
+          .from('plugin_registry')
+          .insert({
+            plugin_id: validation.sanitized?.pluginId,
+            version: validation.sanitized?.version,
+            capabilities: [validation.sanitized?.pluginType],
+            status: 'online',
+            last_heartbeat: new Date().toISOString()
+          })
+
+        if (insertError) {
+          console.error('Plugin registration error:', insertError)
+          return createCorsResponse(
+            createApiResponse(false, undefined, undefined, '插件注册失败'),
+            500
+          )
+        }
+      }
+
+      // Log registration
+      await supabase
+        .from('system_logs')
+        .insert({
+          log_level: 'info',
+          log_type: 'plugin_event',
+          plugin_id: validation.sanitized?.pluginId,
+          user_ip: clientIP,
+          message: existing ? '插件重新注册' : '插件首次注册',
+          details: validation.sanitized
+        })
+
+      return createCorsResponse(
+        createApiResponse(true, {
+          success: true,
+          message: existing ? '插件重新注册成功' : '插件注册成功',
+          pluginId: validation.sanitized?.pluginId,
+          isUpdate: !!existing,
+          timestamp: new Date().toISOString()
+        })
+      )
+
+    } catch (dbError) {
+      console.error('Database connection error:', dbError)
+      return createCorsResponse(
+        createApiResponse(false, undefined, undefined, '数据库连接失败'),
+        500
+      )
+    }
 
   } catch (error) {
     console.error('Unexpected error in plugin registration:', error)

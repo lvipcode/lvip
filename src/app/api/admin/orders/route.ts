@@ -14,17 +14,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServerSupabase()
 
-    // 构建查询
+    // 构建查询 - 先简单查询订单
     let query = supabase
       .from('orders')
-      .select(`
-        *,
-        redemption_code_batches (
-          batch_name,
-          generated_count,
-          used_count
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
 
     // 应用过滤条件

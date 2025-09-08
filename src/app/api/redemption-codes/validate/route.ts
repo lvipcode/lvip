@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       if (!result.is_valid) {
         return NextResponse.json(
           createApiResponse(false, {
-            valid: false,
+            isValid: false,
             code: sanitizedCode,
             message: result.message
           }, result.message),
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         createApiResponse(true, {
-          valid: true,
+          isValid: true,
           code: sanitizedCode,
           codeId: result.code_id,
           message: '兑换码验证成功',

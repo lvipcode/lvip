@@ -123,9 +123,7 @@ export default function AdminLogin() {
       const result = await response.json()
 
       if (result.success) {
-        setInitMessage('默认管理员已创建！用户名: admin, 密码: admin123')
-        // 自动填充表单
-        setFormData({ username: 'admin', password: 'admin123' })
+        setInitMessage('默认管理员已创建，请使用默认账号登录')
       } else {
         setInitMessage(result.error || '初始化失败')
       }
@@ -255,12 +253,6 @@ export default function AdminLogin() {
               </Button>
             </div>
             
-            <div className="text-xs text-gray-500 text-center space-y-1">
-              <p>默认账号信息：</p>
-              <p className="font-mono bg-gray-100 px-2 py-1 rounded">
-                用户名: admin / 密码: admin123
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>

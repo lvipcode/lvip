@@ -19,7 +19,9 @@ import {
   Download,
   LogOut,
   ShoppingCart,
-  Search
+  Search,
+  Lock,
+  EyeOff
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -59,6 +61,12 @@ interface CodeGenForm {
   notes: string
 }
 
+interface PasswordChangeForm {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [stats, setStats] = useState<DashboardStats>({
@@ -75,11 +83,20 @@ export default function AdminDashboard() {
   const [error, setError] = useState('')
   const [showCodeForm, setShowCodeForm] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
   const [codeForm, setCodeForm] = useState<CodeGenForm>({
     batchName: '',
     quantity: 10,
     usageLimit: 1,
     notes: ''
+  })
+  const [passwordForm, setPasswordForm] = useState<PasswordChangeForm>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   })
 
   useEffect(() => {
@@ -178,6 +195,60 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleChangePassword = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setError('请填写所有密码字段')
+      return
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setError('新密码和确认密码不匹配')
+      return
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setError('新密码至少需要6位字符')
+      return
+    }
+
+    try {
+      setChangingPassword(true)
+      setError('')
+
+      const response = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // 重置表单
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        })
+        setShowPasswordForm(false)
+        alert('密码修改成功！')
+      } else {
+        setError(result.error || '密码修改失败')
+      }
+
+    } catch (error) {
+      console.error('密码修改失败:', error)
+      setError('网络错误，请稍后重试')
+    } finally {
+      setChangingPassword(false)
+    }
+  }
+
   const handleLogout = async () => {
     try {
       await fetch('/api/admin/logout', {
@@ -238,6 +309,14 @@ export default function AdminDashboard() {
                 刷新
               </Button>
               <Button
+                onClick={() => setShowPasswordForm(!showPasswordForm)}
+                variant="outline"
+                size="sm"
+              >
+                <Lock className="h-4 w-4 mr-2" />
+                修改密码
+              </Button>
+              <Button
                 onClick={handleLogout}
                 variant="outline"
                 size="sm"
@@ -258,6 +337,104 @@ export default function AdminDashboard() {
               {error}
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* 修改密码表单 */}
+        {showPasswordForm && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                修改管理员密码
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-w-md space-y-4">
+                <div>
+                  <Label htmlFor="currentPassword">当前密码</Label>
+                  <div className="relative">
+                    <Input
+                      id="currentPassword"
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="请输入当前密码"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="newPassword">新密码</Label>
+                  <div className="relative">
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="请输入新密码（至少6位）"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword">确认新密码</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="请再次输入新密码"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={changingPassword}
+                    size="sm"
+                  >
+                    {changingPassword ? '修改中...' : '确认修改'}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowPasswordForm(false)
+                      setPasswordForm({
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                      })
+                      setError('')
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    取消
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* 统计卡片 */}

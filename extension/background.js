@@ -3,16 +3,22 @@
 
 class LinkedInExtractorPlugin {
   constructor() {
-    this.pluginId = 'linkedin-extractor-' + Date.now()
+    this.pluginId = 'linkedin-ext-' + Date.now().toString().slice(-8)
     this.isRegistered = false
     this.currentTask = null
     this.heartbeatInterval = null
     this.taskListenerEventSource = null
-    this.apiBaseUrl = 'http://localhost:3000/api' // 默认API地址
+    this.apiBaseUrl = 'https://lvip.vercel.app/api' // 默认API地址
     this.registrationToken = null
     this.status = 'offline'
     this.lastHeartbeat = null
     this.capabilities = ['person-search']
+    
+    // SSE重连控制
+    this.reconnectAttempts = 0
+    this.maxReconnectAttempts = 10
+    this.baseReconnectDelay = 1000 // 1秒
+    this.maxReconnectDelay = 30000  // 30秒
     
     this.init()
   }
@@ -154,6 +160,8 @@ class LinkedInExtractorPlugin {
   async registerPlugin() {
     try {
       console.log('注册插件到服务器...')
+      console.log('API URL:', `${this.apiBaseUrl}/plugins/register`)
+      console.log('Plugin ID:', this.pluginId)
       
       const response = await fetch(`${this.apiBaseUrl}/plugins/register`, {
         method: 'POST',
@@ -162,7 +170,7 @@ class LinkedInExtractorPlugin {
         },
         body: JSON.stringify({
           pluginId: this.pluginId,
-          pluginType: 'person-search',
+          pluginType: 'data_extractor',
           capacity: 10,
           version: '1.0.0',
           metadata: {
@@ -173,7 +181,9 @@ class LinkedInExtractorPlugin {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP错误! 状态: ${response.status}`)
+        const errorText = await response.text()
+        console.error('HTTP响应错误:', response.status, errorText)
+        throw new Error(`HTTP错误! 状态: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
@@ -284,30 +294,71 @@ class LinkedInExtractorPlugin {
       
       this.taskListenerEventSource = new EventSource(sseUrl)
       
-      this.taskListenerEventSource.onopen = () => {
-        console.log('任务监听器SSE连接已建立')
-      }
-      
       this.taskListenerEventSource.onmessage = (event) => {
         try {
-          const taskData = JSON.parse(event.data)
-          console.log('收到新任务:', taskData)
-          this.handleNewTask(taskData)
+          const messageData = JSON.parse(event.data)
+          console.log('收到SSE消息:', messageData)
+          
+          // 根据消息类型分别处理
+          switch (messageData.type) {
+            case 'connection':
+              console.log('SSE连接确认:', messageData.message)
+              break
+            case 'keepalive':
+              console.log('收到保活消息，连接插件数:', messageData.connectedPlugins)
+              break
+            case 'status':
+              console.log('系统状态更新:', messageData.message, '排队任务数:', messageData.queuedTasks)
+              this.updateStatus(messageData)
+              break
+            case 'task':
+              console.log('收到新任务:', messageData)
+              this.handleNewTask(messageData)
+              break
+            case 'error':
+              console.error('服务器错误消息:', messageData.message)
+              break
+            case 'cancel':
+              console.log('任务取消通知:', messageData.taskId)
+              this.handleTaskCancel(messageData.taskId)
+              break
+            default:
+              console.warn('未知SSE消息类型:', messageData.type, messageData)
+          }
         } catch (error) {
-          console.error('解析任务数据失败:', error)
+          console.error('解析SSE消息失败:', error)
         }
       }
       
       this.taskListenerEventSource.onerror = (error) => {
         console.error('任务监听器SSE连接错误:', error)
+        this.taskListenerEventSource.close()
         
-        // 重连逻辑
-        setTimeout(() => {
-          if (this.isRegistered) {
-            console.log('尝试重新连接任务监听器...')
-            this.startTaskListener()
-          }
-        }, 5000)
+        // 指数退避重连逻辑
+        if (this.isRegistered && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++
+          const delay = Math.min(
+            this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
+            this.maxReconnectDelay
+          )
+          
+          console.log(`尝试重新连接任务监听器 (${this.reconnectAttempts}/${this.maxReconnectAttempts})，${delay}ms后重试`)
+          
+          setTimeout(() => {
+            if (this.isRegistered) {
+              this.startTaskListener()
+            }
+          }, delay)
+        } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          console.error('SSE重连次数超过限制，停止重连')
+          this.status = 'error'
+        }
+      }
+      
+      // 连接成功时重置重连计数器
+      this.taskListenerEventSource.onopen = () => {
+        console.log('任务监听器SSE连接已建立')
+        this.reconnectAttempts = 0 // 重置重连计数
       }
       
     } catch (error) {
@@ -372,6 +423,64 @@ class LinkedInExtractorPlugin {
       // 清除当前任务
       this.currentTask = null
       this.status = 'online'
+    }
+  }
+
+  async handleTaskCancel(taskId) {
+    console.log('处理任务取消通知:', taskId)
+    
+    if (this.currentTask && this.currentTask.taskId === taskId) {
+      console.log('取消当前任务:', taskId)
+      
+      // 通知content script停止任务
+      try {
+        const linkedInTabs = await this.findLinkedInTabs()
+        if (linkedInTabs.length > 0) {
+          await chrome.tabs.sendMessage(linkedInTabs[0].id, {
+            type: 'CANCEL_TASK',
+            data: { taskId }
+          })
+        }
+      } catch (error) {
+        console.error('通知content script取消任务失败:', error)
+      }
+      
+      // 清除当前任务
+      this.currentTask = null
+      this.status = 'online'
+      console.log('任务已取消，插件状态重置为在线')
+    }
+  }
+
+  updateStatus(statusData) {
+    // 更新系统状态信息
+    this.serverStatus = {
+      message: statusData.message,
+      queuedTasks: statusData.queuedTasks,
+      serverLoad: statusData.serverLoad,
+      lastUpdate: Date.now()
+    }
+    
+    // 通知popup更新显示
+    this.broadcastStatusUpdate()
+  }
+
+  broadcastStatusUpdate() {
+    // 向所有监听者广播状态更新
+    try {
+      chrome.runtime.sendMessage({
+        type: 'STATUS_UPDATE',
+        data: {
+          pluginId: this.pluginId,
+          isRegistered: this.isRegistered,
+          status: this.status,
+          currentTask: this.currentTask,
+          serverStatus: this.serverStatus,
+          lastHeartbeat: this.lastHeartbeat
+        }
+      })
+    } catch (error) {
+      // 忽略发送失败（如果没有接收者）
     }
   }
 

@@ -17,7 +17,7 @@ import type {
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  baseURL: typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ export const userApi = {
   
   // 导出结果到Excel
   exportResults: async (taskId: string): Promise<Blob> => {
-    const response = await api.get(`/api/export/results/${taskId}`, {
+    const response = await api.get(`/api/export/${taskId}`, {
       responseType: 'blob',
     })
     

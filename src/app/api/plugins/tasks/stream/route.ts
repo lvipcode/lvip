@@ -43,8 +43,7 @@ function sendToPlugin(pluginId: string, type: string, data: any) {
   return false
 }
 
-// 导出函数供其他API端点使用
-export { broadcastMessage, sendToPlugin, pluginConnections }
+// 这些函数供此文件内部使用，不导出以符合Next.js API路由约束
 
 export async function GET(request: NextRequest) {
   try {

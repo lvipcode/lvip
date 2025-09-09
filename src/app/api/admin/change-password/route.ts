@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // 查询管理员信息
-      const { data: adminData, error: adminError } = await supabase
+      const { data: adminData, error: adminError } = await (supabase as any)
         .from('admin_users')
         .select('id, username, password_hash')
         .eq('id', verification.user.id)
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       const newPasswordHash = await bcrypt.hash(newPassword, saltRounds)
 
       // 更新密码
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('admin_users')
         .update({ 
           password_hash: newPasswordHash,
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
       // 记录日志
       try {
-        await supabase
+        await (supabase as any)
           .from('system_logs')
           .insert({
             log_level: 'info',

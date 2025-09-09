@@ -14,7 +14,7 @@ function validateTaskData(data: any): { valid: boolean; error?: string; sanitize
     return { valid: false, error: '搜索参数不能为空' }
   }
 
-  const validTypes = ['person_search', 'company_search', 'skill_analysis']
+  const validTypes = ['person-search', 'company-search', 'company-employees']
   if (!validTypes.includes(data.taskType)) {
     return { valid: false, error: '无效的任务类型' }
   }
